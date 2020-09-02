@@ -1,6 +1,6 @@
 const packageFile = require('./package.json'),
     appVer = packageFile.version,
-    alexaCookie = require('./alexa-cookie/alexa-cookie'),
+    alexaCookie = require('./libs/alexa-cookie/alexa-cookie'),
     reqPromise = require("request-promise"),
     logger = require('./logger'),
     express = require('express'),
@@ -302,17 +302,23 @@ function startWebServer(checkForCookie = false) {
         trace: (configData.settings.serviceTrace === true),
         checkForCookie: checkForCookie,
         serverPort: configData.settings.serverPort,
-        amazonPage: configData.settings.amazonDomain,
+        amazonPage: (configData.settings.amazonDomain === 'amazon.co.jp') ? configData.settings.amazonDomain : undefined,
+        logger: console.log,
+        baseAmazonPage: (configData.settings.amazonDomain === 'amazon.co.jp') ? configData.settings.amazonDomain : undefined,
         // alexaServiceHost: ((configData.settings.amazonDomain === 'amazon.de' || configData.settings.amazonDomain === 'amazon.co.uk') ? 'layla.' : 'pitangui.') + configData.settings.amazonDomain,
         setupProxy: true,
         proxyOwnIp: getIPAddress(),
         proxyListenBind: '0.0.0.0',
+        // proxyLogLevel: 'info', // optional: Loglevel of Proxy, default 'warn'
         protocolPrefix: getProtoPrefix(),
+        regDataAppName: "Echo Speaks",
         useHeroku: isHeroku,
         proxyHost: configData.settings.hostUrl,
         proxyPort: configData.settings.serverPort,
         proxyRootPath: isHeroku ? '/proxy' : '/proxy',
         acceptLanguage: configData.settings.regionLocale,
+        formerRegistrationData: runTimeData.savedConfig.cookieData,
+        expressInstance: webApp,
         callbackEndpoint: configData.settings.appCallbackUrl ? String(configData.settings.appCallbackUrl).replace("/receiveData?", "/cookie?") : null
     };
 
@@ -532,7 +538,7 @@ function alexaLogin(username, password, alexaOptions, callback) {
                 config.cookieData = sessionData.cookieData || {};
                 callback(null, 'Login Successful (Stored Session)', config);
             } else {
-                alexaCookie.generateAlexaCookie(username, password, alexaOptions, webApp, (err, result) => {
+                alexaCookie.generateAlexaCookie(username, password, alexaOptions, (err, result) => {
                     //   console.log('generateAlexaCookie error: ', err);
                     //   console.log('generateAlexaCookie result: ', result);
                     if (err && (err.message.startsWith('Login unsuccessful') || err.message.startsWith('Amazon-Login-Error:') || err.message.startsWith(' You can try to get the cookie manually by opening'))) {
